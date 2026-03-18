@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soulmate | Developed by Mr. Asad</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --heart-red: #ff2d75;
+            --no-yellow: #ffcc00; /* New Yellow Color */
+            --deep-space: #020205;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: var(--deep-space);
+            color: white; overflow: hidden;
+            font-family: 'Montserrat', sans-serif;
+            perspective: 2000px;
+        }
+
+        #bg-canvas { position: fixed; inset: 0; z-index: 1; }
+
+        .overlay {
+            position: fixed; inset: 0; z-index: 5;
+            background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none;
+        }
+
+        /* --- BRANDING --- */
+        .dev-tag {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            font-size: 0.7rem; letter-spacing: 3px; color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+        }
+
+        /* --- SOCIAL BUTTONS --- */
+        .social-dock {
+            position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 15px; z-index: 100;
+        }
+        .social-btn {
+            width: 45px; height: 45px; background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; text-decoration: none; transition: 0.4s;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .social-btn:hover { background: var(--heart-red); transform: scale(1.1); }
+
+        /* --- THE MAGIC STAR --- */
+        #falling-star {
+            position: absolute; top: -10%; left: 50%; transform: translateX(-50%);
+            font-size: 70px; cursor: pointer; filter: drop-shadow(0 0 30px var(--heart-red));
+            z-index: 20; animation: descend 5s ease-in-out forwards;
+        }
+
+        @keyframes descend {
+            0% { top: -10%; opacity: 0; transform: translateX(-50%) scale(0.5) rotate(0deg); }
+            100% { top: 45%; opacity: 1; transform: translateX(-50%) scale(1.2) rotate(360deg); }
+        }
+
+        /* --- 3D CARD --- */
+        .card-3d {
+            display: none; width: 380px; padding: 50px;
+            background: rgba(255, 255, 255, 0.95); border-radius: 2px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.9);
+            color: #1a1a1a; transform-style: preserve-3d;
+            transition: transform 0.1s ease-out; z-index: 30; text-align: center;
+        }
+
+        .card-3d h1 { font-family: 'Great Vibes', cursive; font-size: 3.5rem; color: var(--heart-red); margin-bottom: 20px; }
+        .card-3d p { font-size: 1.1rem; line-height: 1.8; font-style: italic; color: #333; opacity: 0; }
+
+        .actions { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+        .btn { padding: 12px 35px; border: none; border-radius: 50px; font-weight: 600; cursor: pointer; transition: 0.4s; }
+        
+        .btn-yes { background: var(--heart-red); color: white; }
+        
+        /* YELLOW NO BUTTON */
+        .btn-no { 
+            background: var(--no-yellow); 
+            color: #000; 
+            box-shadow: 0 5px 15px rgba(255, 204, 0, 0.3);
+        }
+
+        .sparkle { position: fixed; width: 3px; height: 3px; background: white; border-radius: 50%; pointer-events: none; z-index: 100; }
+        
+        /* HIDDEN PLAYER */
+        #yt-container { position: absolute; top: -1000px; left: -1000px; visibility: hidden; }
+    </style>
+</head>
+<body>
+
+    <div class="dev-tag">Developed by Mr. Asad</div>
+
+    <div id="yt-container">
+        <div id="player"></div>
+    </div>
+
+    <div class="social-dock">
+        <a href="#" class="social-btn"><i class="fab fa-instagram"></i></a>
+        <a href="#" class="social-btn"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" class="social-btn"><i class="fab fa-whatsapp"></i></a>
+    </div>
+
+    <canvas id="bg-canvas"></canvas>
+    <div class="overlay"></div>
+
+    <div id="falling-star" onclick="unfoldMagic()">💖</div>
+
+    <div class="world" style="height:100vh; display:flex; align-items:center; justify-content:center;">
+        <div class="card-3d" id="soul-letter">
+            <h1 id="title">Humsafar...</h1>
+            <p id="p1">I asked the universe for a sign, and it gave me you. You are the silent prayer my heart always whispered.</p>
+            <p id="p2">In a sky full of stars, my eyes will always search for yours. Will you stay with me forever?</p>
+            <div class="actions">
+                <button class="btn btn-yes" onclick="theEnd()">YES ❤️</button>
+                <button class="btn btn-no" id="run-btn" onmouseover="dodge()">NO</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load YouTube API
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player;
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '0', width: '0',
+                videoId: '2BNyYtW6gEY', // Farmaish
+                events: { 'onReady': onPlayerReady }
+            });
+        }
+        function onPlayerReady(event) { console.log("Song Ready"); }
+
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+
+        function init() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            stars = Array.from({length: 300}, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                s: Math.random() * 2,
+                v: Math.random() * 0.05
+            }));
+        }
+
+        function draw() {
+            ctx.fillStyle = '#020205';
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+            stars.forEach(s => {
+                s.v += 0.02;
+                ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.abs(Math.sin(s.v)) * 0.8})`;
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.s, 0, Math.PI*2); ctx.fill();
+            });
+            requestAnimationFrame(draw);
+        }
+
+        function unfoldMagic() {
+            // PLAY SONG - This must happen inside the click event
+            if (player && player.playVideo) {
+                player.playVideo();
+                player.setVolume(100);
+            }
+
+            const star = document.getElementById('falling-star');
+            const letter = document.getElementById('soul-letter');
+            
+            star.style.transform = "translateX(-50%) scale(5) rotate(720deg)";
+            star.style.opacity = "0";
+
+            setTimeout(() => {
+                star.style.display = 'none';
+                letter.style.display = 'block';
+                setTimeout(() => { document.getElementById('p1').style.opacity = 1; document.getElementById('p1').style.transition = "2s"; }, 500);
+                setTimeout(() => { document.getElementById('p2').style.opacity = 1; document.getElementById('p2').style.transition = "2s"; }, 2500);
+            }, 800);
+        }
+
+        // 3D Mouse Tilt
+        document.addEventListener('mousemove', (e) => {
+            const letter = document.getElementById('soul-letter');
+            if(letter.style.display === 'block') {
+                const x = (window.innerWidth / 2 - e.pageX) / 20;
+                const y = (window.innerHeight / 2 - e.pageY) / 20;
+                letter.style.transform = `rotateY(${-x}deg) rotateX(${y}deg)`;
+            }
+            const s = document.createElement('div');
+            s.className = 'sparkle';
+            s.style.left = e.pageX + 'px'; s.style.top = e.pageY + 'px';
+            document.body.appendChild(s);
+            s.animate([{opacity: 1}, {opacity: 0, transform: 'scale(0)'}], 800);
+            setTimeout(() => s.remove(), 800);
+        });
+
+        function dodge() {
+            const btn = document.getElementById('run-btn');
+            btn.style.position = 'fixed';
+            btn.style.left = Math.random() * 80 + 'vw';
+            btn.style.top = Math.random() * 80 + 'vh';
+        }
+
+        function theEnd() {
+            document.getElementById('soul-letter').innerHTML = `
+                <h1 style="font-size: 5rem;">Sukoon.</h1>
+                <p style="opacity:1">Our souls have finally found their home. <br> ✨ Always & Forever ✨</p>
+            `;
+            document.body.style.background = "radial-gradient(circle, #4a0e1c 0%, #020205 100%)";
+        }
+
+        window.addEventListener('resize', init);
+        init(); draw();
+    </script>
+</body>
+</html>
